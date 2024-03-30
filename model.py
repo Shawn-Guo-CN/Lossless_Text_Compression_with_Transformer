@@ -4,8 +4,9 @@ Full definition of a GPT Language Model, all of it in this single file.
 References:
 1) the official GPT-2 TensorFlow implementation released by OpenAI:
 https://github.com/openai/gpt-2/blob/master/src/model.py
-2) huggingface/transformers PyTorch implementation:
-https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt2/modeling_gpt2.py
+2) Huggingface/transformers PyTorch implementation:
+https://github.com/huggingface/transformers/blob/main/src/
+transformers/models/gpt2/modeling_gpt2.py
 """
 from dataclasses import dataclass
 import math
@@ -15,7 +16,6 @@ import torch
 import torch.nn as nn
 from simple_parsing.helpers import Serializable
 from torch.nn import functional as F
-from utils import MoeArgs, MoeLayer
 
 
 @dataclass
@@ -35,11 +35,17 @@ class ModelArgs(Serializable):
 
 class NewGELU(nn.Module):
     """
-    Implementation of the GELU activation function currently in Google BERT repo (identical to OpenAI GPT).
-    Reference: Gaussian Error Linear Units (GELU) paper: https://arxiv.org/abs/1606.08415
+    Implementation of the GELU activation function currently in Google BERT
+    repo (identical to OpenAI GPT).
+    Reference: Gaussian Error Linear Units (GELU) paper:
+    https://arxiv.org/abs/1606.08415
     """
     def forward(self, x):
-        return 0.5 * x * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * torch.pow(x, 3.0))))
+        return 0.5 * x * (
+            1.0 + torch.tanh(
+                math.sqrt(2.0 / math.pi) * (x + 0.044715 * torch.pow(x, 3.0))
+            )
+        )
 
 
 class CausalSelfAttention(nn.Module):
@@ -59,9 +65,13 @@ class CausalSelfAttention(nn.Module):
         # regularization
         self.attn_dropout = nn.Dropout(config.attn_pdrop)
         self.resid_dropout = nn.Dropout(config.resid_pdrop)
-        # causal mask to ensure that attention is only applied to the left in the input sequence
-        self.register_buffer("bias", torch.tril(torch.ones(config.block_size, config.block_size))
-                                     .view(1, 1, config.block_size, config.block_size))
+        # causal mask to ensure that attention is only applied to the left in
+        # the input sequence
+        self.register_buffer(
+            "bias",
+            torch.tril(torch.ones(config.block_size, config.block_size)
+                      ).view(1, 1, config.block_size, config.block_size)
+        )
         self.n_head = config.n_head
         self.n_embd = config.n_embd
 
