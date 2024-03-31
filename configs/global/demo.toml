@@ -1,0 +1,30 @@
+seed = 0
+vocab_file = 'configs/vocabularies/demo.txt'
+data_path = 'data/demo.txt'
+max_input_length = 8
+
+[ac]
+# arithmetic coding configs
+precision = 8
+
+[model]
+model_type = 'gpt'
+n_layer = 3
+n_head = 4
+n_embd = 32
+norm_eps = 1e-5
+vocab_size = 5
+block_size = 8
+embd_pdrop = 0.0
+resid_pdrop = 0.0
+attn_pdrop = 0.0
+
+[trainer]
+device = 'auto'
+num_workers = 1
+max_iters = inf
+batch_size = 1
+learning_rate = 3e-4
+betas = [0.9, 0.95]
+weight_decay = 0.1
+grad_norm_clip = 1.0
