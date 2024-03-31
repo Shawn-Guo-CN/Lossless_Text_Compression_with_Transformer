@@ -12,10 +12,12 @@ class DataLoader(object):
         self.max_len = max_len
         with open(data_path, 'r') as f:
             self.data = f.readline().strip().split()
-        self.data = [tokenizer.bos_token] + self.data + [tokenizer.eos_token]
+        self.target = self.data + [tokenizer.eos_token]
+        self.data = [tokenizer.bos_token] + self.data
 
         self.idx = 0
-        self.batch = []
+        self.x = []
+        self.y = []
 
     def __iter__(self):
         return self
@@ -24,7 +26,14 @@ class DataLoader(object):
         if self.idx >= len(self.data):
             raise StopIteration
         else:
-            self.batch.append(self.tokenizer.encode(self.data[self.idx]))
+            self.x.append(self.tokenizer.encode(self.data[self.idx]))
+            self.y.append(self.tokenizer.encode(self.target[self.idx]))
+
             self.idx += 1
-            self.batch = self.batch[-self.max_len:]
-            return self.batch
+
+            self.x = self.x[-self.max_len:]
+            self.y = self.y[-self.max_len:]
+            return {
+                'x': self.x,
+                'y': self.y
+            }
