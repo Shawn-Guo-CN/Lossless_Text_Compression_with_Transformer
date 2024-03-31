@@ -4,8 +4,11 @@ class Tokenizer(object):
     def __init__(self, vocab_file:str) -> None:
         self.vocab = {}
         self.idx2token = {}
+        self.bos_token = '<bos>'
+        self.eos_token = '<eos>'
+        self.pad_token = '<pad>'
 
-        self.vocab['<bos>'] = 0
+        self.vocab[self.bos_token] = 0
         self.idx2token[0] = ''
 
         with open(vocab_file, 'r') as f:
@@ -14,7 +17,7 @@ class Tokenizer(object):
                 self.idx2token[i + 1] = line.strip()
 
         self.idx2token[len(self.vocab)] = ''
-        self.vocab['<eos>'] = len(self.vocab)
+        self.vocab[self.eos_token] = len(self.vocab)
 
         self.vocab_size = len(self.vocab)
 

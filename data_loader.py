@@ -8,11 +8,11 @@ class DataLoader(object):
         max_len: int, # should <= the block size of the model
     ) -> None:
         # NOTE: we assume the data file is just one line
-        with open(data_path, 'r') as f:
-            self.data = f.readline().strip().split()
-        self.data = ['<bos>'] + self.data + ['<eos>']
         self.tokenizer = tokenizer
         self.max_len = max_len
+        with open(data_path, 'r') as f:
+            self.data = f.readline().strip().split()
+        self.data = [tokenizer.bos_token] + self.data + [tokenizer.eos_token]
 
         self.idx = 0
         self.batch = []
