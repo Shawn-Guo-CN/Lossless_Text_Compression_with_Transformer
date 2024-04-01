@@ -16,13 +16,13 @@ The modules are:
 
 Many features in the current version are for demonstration purposes only. The following are part of the future work:
 
- [ ] Update the decoder to a more efficient way with PyTorch's tensor operations (to replace the for-loop for identifying the target token to decode)
+- [ ]  Update the decoder to a more efficient way with PyTorch's tensor operations (to replace the for-loop for identifying the target token to decode)
 
- [ ] Implement th I/O streams for large files, the current version reads the whole file into memory
+- [ ]  Implement th I/O streams for large files, the current version reads the whole file into memory
 
- [ ] Update the compressing/decompressing and the training of LLM to a batch-wise manner, the current version assumes batch size = 1
+- [ ]  Update the compressing/decompressing and the training of LLM to a batch-wise manner, the current version assumes batch size = 1
 
- [ ] Support tracking the progress of the compression/decompression and the corresponding negative log-likelihood of the data (which represents the compression ratio)
+- [ ]  Support tracking the progress of the compression/decompression and the corresponding negative log-likelihood of the data (which represents the compression ratio)
 
 ## Usage
 
