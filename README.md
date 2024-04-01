@@ -1,4 +1,4 @@
-# Lossless_Text_Compression_with_Transformer
+# Lossless Text Compression with Transformer-based Language Model
 
 This repo is to demo the concept of lossless compression with Transformers as encoder and decoder.
 
