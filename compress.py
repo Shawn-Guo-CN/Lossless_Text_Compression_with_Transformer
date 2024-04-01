@@ -5,10 +5,9 @@ from utils import set_seed, init_by_config_path
 
 
 def compress(args):
-    config, data_loader, trainer = init_by_config_path(
+    config, _, data_loader, trainer = init_by_config_path(
         args.input_file, args.config_file
     )
-    set_seed(config.seed)
 
     # setup global variables for compressing
     precision = config.ac.precision

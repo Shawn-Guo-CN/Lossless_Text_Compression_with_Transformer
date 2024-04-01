@@ -112,3 +112,10 @@ class Trainer(object):
         self.optimizer.step()
 
         return F.softmax(logits[0][-1], dim=-1)
+
+    def predict_step(self, x):
+        x = torch.LongTensor([x]).to(self.device)
+        with torch.no_grad():
+            logits, _ = self.model(x)
+
+        return F.softmax(logits[0][-1], dim=-1)
