@@ -1,8 +1,14 @@
+from munch import Munch, munchify
+
 import random
 import numpy as np
-import tomllib
 import torch
-from munch import Munch, munchify
+import yaml
+
+from data_loader import DataLoader
+from model import GPT, ModelArgs
+from tokenizer import Tokenizer
+from trainer import TrainArgs, Trainer
 
 
 def set_seed(seed):
@@ -14,8 +20,26 @@ def set_seed(seed):
 
 def get_global_config(path: str):
     with open(path, 'rb') as f:
-        config = tomllib.load(f)
+        config = yaml.safe_load(f)
     config = munchify(config)
-    assert config.max_input_length == config.model.block_size, \
-        "max_input_length should be equal to model.block_size"
-    return 
+    return config
+
+
+def init_by_config_path(input_path: str, config_path: str):
+    config = get_global_config(config_path)
+
+    tokenizer = Tokenizer(config.vocab_file)
+    config.model.vocab_size = tokenizer.vocab_size
+
+    data_loader = DataLoader(
+        input_path, tokenizer, config.model.block_size
+    )
+
+    model_args = ModelArgs.from_dict(config.model)
+    model_args.max_batch_size = config.model.max_batch_size
+    model = GPT(model_args)
+
+    trainer_args = TrainArgs.from_dict(config.trainer)
+    trainer = Trainer(trainer_args, model)
+
+    return config, data_loader, trainer
