@@ -50,8 +50,6 @@ def decompress(args):
                 print(tokenizer.decode(tgt_idx))
 
                 _out_len = min(len(output), max_len)
-                # TODO: the following dummy batch needs to be fixed
-                # problem: x = [0], when y = [0, 1]
                 _batch = {
                     'x': output[-_out_len:],
                     'y': _output[-_out_len:]
