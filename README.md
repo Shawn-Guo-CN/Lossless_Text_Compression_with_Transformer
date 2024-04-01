@@ -4,11 +4,11 @@ This repo is to demo the concept of lossless compression with Transformers as en
 
 The modules are:
 
-1. `compress.py`: The bash script to compress a text file with the Transformer model
+1. `compress.py`: The script to compress a text file by the arithmetic encoding algorithm with a Transformer model
 2. `data_loader.py`: The DataLoader class for loading the text file
-3. `decompress.py`: The bash script to decompress a compressed file with the Transformer model
-4. `model.py`: The Transformer model
-5. `trainer.py`: The Trainer class for updating the model parameters
+3. `decompress.py`: The script to decompress a binary file by the arithmetic decoding algorithm with a Transformer model identical to the compression model
+4. `model.py`: The Transformer model class
+5. `trainer.py`: The Trainer class for updating the model parameters and predicting next-token with a Transformer model
 6. `tokenizer.py`: The Tokenizer class
 7. `utils.py`: Utility functions
 
