@@ -26,40 +26,40 @@ Many features in the current version are for demonstration purposes only. The fo
 
 ## Usage
 
-## Compress
+### Compress
 
 ```bash
 python compress.py --input_file <input_file> --output_file <output_file> --config_file <config_file>
 ```
 
-### Arguments
+#### Arguments
 
 - `input_file`: The path to the input text file, e.g. `data/demo.txt`
 - `output_file`: The path to the output compressed file, e.g. `data/demo_encode_out.txt`
 - `config_file`: The path to the configuration file in the YAML format, e.g. `config/global/demo.yaml`
 
 
-### Pipeline of the compression
+#### Pipeline of the compression
 
 1. Tokenize the input text
 2. Calculate the probability of a token given the previous tokens by the forward pass of Transformer model
 3. Encode the token with the probability and the arithmetic coding algorithm
 4. Output the arithmetic code to a text file for readability
 
-## Decompress
+### Decompress
 
 ```bash
 python decompress.py --input_file <input_file> --output_file <output_file> --config_file <config_file>
 ```
 
-### Arguments
+#### Arguments
 
 - `input_file`: The path to the input text file, e.g. `data/demo_encode_out.txt`
 - `output_file`: The path to the output compressed file, e.g. `data/demo_decode_out.txt`
 - `config_file`: The path to the configuration file in the YAML format, e.g. `config/global/demo.yaml`
 
 
-### Pipeline of the decompression
+#### Pipeline of the decompression
 
 1. Read the arithmetic code from the input file
 2. Decode the arithmetic code to the token while getting probability from Transformer model and updating the parameters of the model
