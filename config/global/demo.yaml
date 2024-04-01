@@ -1,5 +1,5 @@
 seed: 0
-vocab_file: 'configs/vocabularies/demo.txt'
+vocab_file: 'config/vocabulary/demo.txt'
 
 ac:
   precision: 8 # arithmetic coding configs

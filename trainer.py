@@ -98,8 +98,9 @@ class Trainer(object):
         # setup the optimizer
         self.model.train()
 
-        batch = [t.to(self.device) for t in batch]
-        x, y = batch
+        x = torch.LongTensor([batch['x']]).to(self.device)
+        y = torch.LongTensor([batch['y']]).to(self.device)
+
         logits, loss = self.model(x, y)
         logits = logits.detach()
 
