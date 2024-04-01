@@ -42,6 +42,8 @@ def decompress(args):
             if width == 1 or width == 0:
                 print("precision error")
 
+            # TODO: the following check of low_ and high_ can be implemented 
+            # more efficiently by torch tensor operations
             high_ = low + int(width * cumprobs[tgt_idx + 1])
             low_ = low + int(width * cumprobs[tgt_idx])
 
