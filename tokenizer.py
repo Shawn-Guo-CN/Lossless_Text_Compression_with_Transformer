@@ -6,7 +6,6 @@ class Tokenizer(object):
         self.idx2token = {}
         self.bos_token = '<bos>'
         self.eos_token = '<eos>'
-        self.pad_token = '<pad>'
 
         self.vocab[self.bos_token] = 0
         self.idx2token[0] = ''
@@ -18,6 +17,9 @@ class Tokenizer(object):
 
         self.idx2token[len(self.vocab)] = ''
         self.vocab[self.eos_token] = len(self.vocab)
+
+        self.bos_idx = 0
+        self.eos_idx = self.vocab[self.eos_token]
 
         self.vocab_size = len(self.vocab)
 

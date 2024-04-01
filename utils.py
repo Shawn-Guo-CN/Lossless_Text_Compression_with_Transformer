@@ -31,6 +31,9 @@ def init_by_config_path(input_path: str, config_path: str):
     tokenizer = Tokenizer(config.vocab_file)
     config.model.vocab_size = tokenizer.vocab_size
 
+    config.bos_idx = tokenizer.encode(tokenizer.bos_token)
+    config.eos_idx = tokenizer.encode(tokenizer.eos_token)
+
     data_loader = DataLoader(
         input_path, tokenizer, config.model.block_size
     )
@@ -42,4 +45,4 @@ def init_by_config_path(input_path: str, config_path: str):
     trainer_args = TrainArgs.from_dict(config.trainer)
     trainer = Trainer(trainer_args, model)
 
-    return config, data_loader, trainer
+    return config, tokenizer, data_loader, trainer
