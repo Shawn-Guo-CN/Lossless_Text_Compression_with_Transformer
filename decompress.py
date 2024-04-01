@@ -82,7 +82,7 @@ def decompress(args):
             i += 1
 
     with open(args.output_file, 'w') as f:
-        print(' '.join([tokenizer.decode(o) for o in output]), file=f)
+        print(' '.join([tokenizer.decode(o) for o in output]).strip(), file=f)
 
     return
 
