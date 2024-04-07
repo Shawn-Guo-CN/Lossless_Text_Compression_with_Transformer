@@ -36,7 +36,8 @@ def decompress(args):
 
     while output[-1] != tokenizer.eos_idx:
         # get the probabilities of the next token with ONLY FORWARD PASS
-        probs = trainer.predict_step(output[-max_len:])
+        logits = trainer.predict_step(output[-max_len:])
+        probs = torch.softmax(logits[0][-1], dim=-1)
         cumprobs = torch.cumsum(probs, dim=0)
         cumprobs = torch.cat(
             (torch.tensor([0.0], device=probs.device), cumprobs), dim=0
@@ -57,13 +58,10 @@ def decompress(args):
 
         # backpropagate the target index
         _output = output + [tgt_idx]
-        print(tokenizer.decode(tgt_idx))
         _out_len = min(len(output), max_len)
-        _batch = {
-                    'x': output[-_out_len:],
-                    'y': _output[-_out_len:]
-                }
-        _ = trainer.step(_batch)
+        _y = _output[-_out_len:]
+        _loss = trainer.loss_step(logits, _y)
+        trainer.optim_step(_loss)
 
         # update the tracker variables
         output = _output

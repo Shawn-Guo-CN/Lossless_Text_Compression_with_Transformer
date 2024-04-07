@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import torch
 
 from utils import set_seed, init_by_config_path
 
@@ -26,13 +27,17 @@ def compress(args):
         if width == 1 or width == 0:
             print("precision error")
 
-        probs = trainer.step(batch).to('cpu').numpy()
-        cumprobs = np.cumsum(probs)
-        cumprobs = np.insert(cumprobs, 0, 0.)
+        probs = trainer.update_step(batch)
+        cumprobs = torch.cumsum(probs, dim=0)
+        cumprobs = torch.cat(
+            (torch.tensor([0.0], device=probs.device), cumprobs), dim=0
+        )
         tgt_idx = batch['y'][-1]
+        cumprob_high = cumprobs[tgt_idx + 1].to('cpu').item()
+        cumprob_low = cumprobs[tgt_idx].to('cpu').item()
 
-        high = low + int(width * cumprobs[tgt_idx + 1])
-        low = low + int(width * cumprobs[tgt_idx])
+        high = low + int(width * cumprob_high)
+        low = low + int(width * cumprob_low)
 
         while high < half or low > half:
             if high < half:

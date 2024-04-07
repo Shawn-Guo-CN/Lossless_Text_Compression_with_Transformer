@@ -94,28 +94,30 @@ class Trainer(object):
         )
         return optimizer
 
-    def step(self, batch):
+    def update_step(self, batch):
         # setup the optimizer
         self.model.train()
 
-        x = torch.LongTensor([batch['x']]).to(self.device)
-        y = torch.LongTensor([batch['y']]).to(self.device)
-
-        logits, loss = self.model(x, y)
+        logits = self.predict_step(batch['x'])
+        loss = self.loss_step(logits, batch['y'])
         logits = logits.detach()
+        self.optim_step(loss)
 
+        return F.softmax(logits[0][-1], dim=-1)
+
+    def predict_step(self, x):
+        x = torch.LongTensor([x]).to(self.device)
+        logits = self.model(x)
+        return logits
+
+    def loss_step(self, logits, y):
+        y = torch.LongTensor([y]).to(self.device)
+        return self.model.get_loss(logits, y)
+
+    def optim_step(self, loss):
         self.model.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(
             self.model.parameters(), self.config.grad_norm_clip
         )
         self.optimizer.step()
-
-        return F.softmax(logits[0][-1], dim=-1)
-
-    def predict_step(self, x):
-        x = torch.LongTensor([x]).to(self.device)
-        with torch.no_grad():
-            logits, _ = self.model(x)
-
-        return F.softmax(logits[0][-1], dim=-1)
