@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import torch
 
 from utils import set_seed, init_by_config_path
 
@@ -32,36 +33,42 @@ def decompress(args):
         i += 1
 
     output = [0]
+
     while output[-1] != tokenizer.eos_idx:
-        probs = trainer.predict_step(output[-max_len:]).to('cpu').numpy()
-        cumprobs = np.cumsum(probs)
-        cumprobs = np.insert(cumprobs, 0, 0.)
+        # get the probabilities of the next token with ONLY FORWARD PASS
+        probs = trainer.predict_step(output[-max_len:])
+        cumprobs = torch.cumsum(probs, dim=0)
+        cumprobs = torch.cat(
+            (torch.tensor([0.0], device=probs.device), cumprobs), dim=0
+        )
 
-        for tgt_idx in range(1, tokenizer.vocab_size):
-            width = high - low
-            if width == 1 or width == 0:
-                print("precision error")
+        # get the target index
+        width = high - low
+        assert width > 1, "Precision error."
+        widths = width * cumprobs[1:] 
+        lows = low + widths[:-1].int()
+        highs = low + widths[1:].int()
 
-            # TODO: the following check of low_ and high_ can be implemented 
-            # more efficiently by torch tensor operations
-            high_ = low + int(width * cumprobs[tgt_idx + 1])
-            low_ = low + int(width * cumprobs[tgt_idx])
+        valid_indices = (lows <= z) & (z < highs)
+        assert valid_indices.any(), "No valid index found."
+        assert valid_indices.sum() == 1, "More than one valid index found."
 
-            if low_ <= z < high_:
-                _output = output + [tgt_idx]
-                print(tokenizer.decode(tgt_idx))
+        tgt_idx = valid_indices.nonzero(as_tuple=True)[0][0].item() + 1
 
-                _out_len = min(len(output), max_len)
-                _batch = {
+        # backpropagate the target index
+        _output = output + [tgt_idx]
+        print(tokenizer.decode(tgt_idx))
+        _out_len = min(len(output), max_len)
+        _batch = {
                     'x': output[-_out_len:],
                     'y': _output[-_out_len:]
                 }
-                _ = trainer.step(_batch)
+        _ = trainer.step(_batch)
 
-                output = _output
-                low = low_
-                high = high_
-                break
+        # update the tracker variables
+        output = _output
+        low = lows[tgt_idx - 1]
+        high = highs[tgt_idx - 1]
 
         while high < half or low > half:
             if high < half:

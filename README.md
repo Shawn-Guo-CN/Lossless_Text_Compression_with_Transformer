@@ -1,6 +1,8 @@
 # Lossless Text Compression with Transformer-based Language Model
 
-This repo is to demo the concept of lossless compression with Transformers as encoder and decoder.
+This repo is to demo the concept of lossless compression with Transformers-based language model as encoder and decoder.
+
+Contributors: Shangmin Guo (@Shawn-Guo-CN), Ze Peng (@Raphaelhpze)
 
 The modules are:
 
@@ -16,7 +18,9 @@ The modules are:
 
 Many features in the current version are for demonstration purposes only. The following are part of the future work:
 
-- [ ]  Update the decoder to a more efficient way with PyTorch's tensor operations (to replace the for-loop for identifying the target token to decode)
+- [x]  Update the decoder to a more efficient way with PyTorch's tensor operations (to replace the for-loop for identifying the target token to decode)
+
+- [ ]  Split the model's forward and backforward pass to save computes for decoding
 
 - [ ]  Implement th I/O streams for large files, the current version reads the whole file into memory
 
