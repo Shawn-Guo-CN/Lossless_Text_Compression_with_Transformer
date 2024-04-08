@@ -1,6 +1,6 @@
 from tokenizer import Tokenizer
 
-class DataLoader(object):
+class PlainDataLoader(object):
     def __init__(
         self,
         data_path: str,
@@ -21,7 +21,7 @@ class DataLoader(object):
 
     def __iter__(self):
         return self
- 
+
     def __next__(self):
         if self.idx >= len(self.data):
             raise StopIteration

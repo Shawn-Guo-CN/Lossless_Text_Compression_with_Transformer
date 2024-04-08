@@ -1,3 +1,4 @@
+dataloader: 'PlainDataLoader'
 seed: 0
 vocab_file: 'config/vocabulary/demo.txt'
 

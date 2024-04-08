@@ -1,6 +1,8 @@
 from typing import List
 
 class Tokenizer(object):
+    """Tokenise the input by splitting it by space."""
+
     def __init__(self, vocab_file:str) -> None:
         self.vocab = {}
         self.idx2token = {}

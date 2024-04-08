@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import yaml
 
-from data_loader import DataLoader
+import data_loader
 from model import GPT, ModelArgs
 from tokenizer import Tokenizer
 from trainer import TrainArgs, Trainer
@@ -38,7 +38,8 @@ def init_by_config_path(input_path: str, config_path: str):
     config.bos_idx = tokenizer.encode(tokenizer.bos_token)
     config.eos_idx = tokenizer.encode(tokenizer.eos_token)
 
-    data_loader = DataLoader(
+    data_loader_cls = getattr(data_loader, config.dataloader)
+    dataloader = data_loader_cls(
         input_path, tokenizer, config.model.block_size
     )
 
@@ -49,4 +50,4 @@ def init_by_config_path(input_path: str, config_path: str):
     trainer_args = TrainArgs.from_dict(config.trainer)
     trainer = Trainer(trainer_args, model)
 
-    return config, tokenizer, data_loader, trainer
+    return config, tokenizer, dataloader, trainer
