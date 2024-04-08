@@ -3,3 +3,4 @@ tqdm
 simple-parsing
 munch
 pyyaml
+spacy
