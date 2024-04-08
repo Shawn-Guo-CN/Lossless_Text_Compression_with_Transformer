@@ -96,7 +96,7 @@ def decompress(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Compress a text file while training an LLM.'
+        description='Decompress a binary file while training an LLM.'
     )
     parser.add_argument(
         '--input_file',
