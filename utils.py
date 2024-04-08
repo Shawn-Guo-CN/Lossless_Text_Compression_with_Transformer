@@ -65,11 +65,12 @@ def creat_vocab_file_with_spacy(input_file: str, output_file: str):
     token_list = []
 
     for line in tqdm(lines, desc='Tokenizing over lines'):
-        doc = nlp(line)
+        doc = nlp(line.strip())
         for token in doc:
-            if not token in token_list:
+            if not token.text in token_list:
                 token_list.append(token.text)
 
+    random.shuffle(token_list)
     with open(output_file, "w") as f:
         for token in token_list:
             print(token, file=f)
