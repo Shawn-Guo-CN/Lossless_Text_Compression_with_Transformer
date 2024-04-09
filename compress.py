@@ -8,6 +8,8 @@ def compress(args):
     config, _, data_loader, trainer = init_by_config_path(
         args.input_file, args.config_file
     )
+    print('Start compressing with the following config...')
+    print(config)
 
     # setup global variables for compressing
     precision = config.ac.precision
@@ -60,8 +62,10 @@ def compress(args):
     else:
         bits += [1] + s*[0]
 
+    print('Compressing done. Saving to file...')
     with open(args.output_file, 'w') as f:
         print(''.join([str(bit) for bit in bits]), file=f)
+    print(f'Saved to file {args.output_file}.')
 
     return
 

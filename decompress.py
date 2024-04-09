@@ -10,6 +10,8 @@ def decompress(args):
         args.input_file, args.config_file
     )
     max_len = config.model.block_size
+    print('Start decompressing with the following config...')
+    print(config)
 
     # setup global variables for compressing
     precision = config.ac.precision
@@ -32,7 +34,7 @@ def decompress(args):
             z = z + 2**(precision - i)
         i += 1
 
-    output = [0]
+    output = [tokenizer.vocab[tokenizer.bos_token]]
 
     while output[-1] != tokenizer.eos_idx:
         # get the probabilities of the next token with ONLY FORWARD PASS
@@ -50,7 +52,7 @@ def decompress(args):
         lows = low + widths[:-1].int()
         highs = low + widths[1:].int()
 
-        valid_indices = (lows <= z) & (z < highs)
+        valid_indices = (lows < z) & (z <= highs)
         assert valid_indices.any(), "No valid index found."
         assert valid_indices.sum() == 1, "More than one valid index found."
 
@@ -88,8 +90,10 @@ def decompress(args):
                 z += 1
             i += 1
 
+    print('Decompression done. Writing to file...')
     with open(args.output_file, 'w') as f:
         print(' '.join([tokenizer.decode(o) for o in output]).strip(), file=f)
+    print(f'Wrote to file {args.output_file}.')
 
     return
 
