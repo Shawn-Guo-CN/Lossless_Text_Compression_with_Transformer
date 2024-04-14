@@ -1,6 +1,7 @@
 import os
 
 from file_io import BinaryCompressFileReader, BinaryCompressFileWriter
+from file_io import TextCompressFileReader, TextCompressFileWriter
 
 
 def test_binary_file_io1():
@@ -35,5 +36,41 @@ def test_binary_file_io2():
     reader.close()
 
     assert test_input_2  + [0] * 4 == test_output_2
+
+    os.remove(tmp_file)
+
+
+def test_text_file_io1():
+    tmp_file = './tmp_text_file_io1.txt'
+
+    test_input_1 = [0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]
+
+    writer = TextCompressFileWriter(tmp_file)
+    writer.write(test_input_1)
+    writer.close()
+
+    reader = TextCompressFileReader(tmp_file)
+    test_output_1 = [bit for bit in reader]
+    reader.close()
+
+    assert test_input_1 == test_output_1
+
+    os.remove(tmp_file)
+
+
+def test_text_file_io2():
+    tmp_file = './tmp_text_file_io2.txt'
+
+    test_input_2 = [1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]
+
+    writer = TextCompressFileWriter(tmp_file)
+    writer.write(test_input_2)
+    writer.close()
+
+    reader = TextCompressFileReader(tmp_file)
+    test_output_2 = [bit for bit in reader]
+    reader.close()
+
+    assert test_input_2 == test_output_2
 
     os.remove(tmp_file)

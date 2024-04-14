@@ -41,6 +41,20 @@ class CompressFileReader(CompressFileIO):
         raise NotImplementedError
 
 
+class TextCompressFileReader(CompressFileReader):
+    def __init__(self, path: str) -> None:
+        super().__init__(path)
+
+    def _get_mode(self) -> str:
+        return 'r'
+
+    def __next__(self) -> int:
+        tmp_byte = self.file_handle.read(1)
+        if len(tmp_byte) == 0:
+            raise StopIteration
+        return int(tmp_byte)
+
+
 class BinaryCompressFileReader(CompressFileReader):
     def __init__(self, path: str) -> None:
         super().__init__(path)
