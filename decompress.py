@@ -1,8 +1,7 @@
 import argparse
-import numpy as np
 import torch
 
-from utils import set_seed, init_by_config_path
+from utils import init_by_config_path
 
 
 def decompress(args):
