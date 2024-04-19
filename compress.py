@@ -26,7 +26,8 @@ def compress(args):
     for batch in data_loader:
         width = high - low
         if width == 1 or width == 0:
-            print("precision error")
+            print('Precision error when compressing')
+            exit(-1)
 
         probs = trainer.update_step(batch)
         cumprobs = torch.cumsum(probs, dim=0)
@@ -42,12 +43,12 @@ def compress(args):
 
         while high < half or low > half:
             if high < half:
-                bits += [0] + s*[1]
+                io.write([0] + s*[1])
                 s = 0
                 low = 2 * low
                 high = 2 * high
             elif low > half:
-                bits += [1] + s*[0]
+                io.write([1] + s*[0])
                 s = 0
                 low = 2 * (low - half)
                 high = 2 * (high - half)
@@ -58,14 +59,12 @@ def compress(args):
 
     s += 1
     if low < quarter:
-        bits += [0] + s*[1]
+        io.write([0] + s*[1])
     else:
-        bits += [1] + s*[0]
+        io.write([1] + s*[0])
 
-    print(f'Compressing done. Saving to file...')
-    io.write(bits)
     io.close()
-    print(f'Saved to file {args.output_file}.')
+    print(f'Compressed to file {args.output_file}.')
 
     return
 
