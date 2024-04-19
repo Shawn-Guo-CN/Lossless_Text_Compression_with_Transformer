@@ -21,8 +21,6 @@ def compress(args):
     high = whole
     s = 0
 
-    bits = []
-
     for batch in data_loader:
         width = high - low
         if width == 1 or width == 0:

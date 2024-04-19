@@ -5,6 +5,7 @@ vocab_file: 'config/vocabulary/demo.txt'
 ac:
   precision: 8 # arithmetic coding configs
   io: 'BinaryCompressFileIO' # class for w/r compressed file
+  io_end_char: ' '
 
 model:
   model_type: null

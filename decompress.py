@@ -32,6 +32,7 @@ def decompress(args):
         i += 1
 
     output = [tokenizer.vocab[tokenizer.bos_token]]
+    out_file = open(args.output_file, 'w')
 
     while output[-1] != tokenizer.eos_idx:
         # get the probabilities of the next token with ONLY FORWARD PASS
@@ -44,7 +45,7 @@ def decompress(args):
 
         # get the target index
         width = high - low
-        assert width > 1, "Precision error."
+        assert width > 1, 'Precision error when decompressing.'
         widths = width * cumprobs[1:] 
         lows = low + widths[:-1].int()
         highs = low + widths[1:].int()
@@ -54,6 +55,10 @@ def decompress(args):
         assert valid_indices.sum() == 1, "More than one valid index found."
 
         tgt_idx = valid_indices.nonzero(as_tuple=True)[0][0].item() + 1
+        print(
+            tokenizer.decode(tgt_idx),
+            file=out_file, end=config.ac.io_end_char
+        )
 
         # backpropagate the target index
         _output = output + [tgt_idx]
@@ -87,9 +92,7 @@ def decompress(args):
                 z += 1
             i += 1
 
-    print('Decompression done. Writing to file...')
-    with open(args.output_file, 'w') as f:
-        print(' '.join([tokenizer.decode(o) for o in output]).strip(), file=f)
+    out_file.close()
     print(f'Wrote to file {args.output_file}.')
 
     return
