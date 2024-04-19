@@ -8,6 +8,7 @@ import torch
 import yaml
 
 import data_loader
+import file_io
 from model import GPT, ModelArgs
 from tokenizer import Tokenizer
 from trainer import TrainArgs, Trainer
@@ -30,7 +31,14 @@ def get_global_config(path: str):
     return config
 
 
-def init_by_config_path(input_path: str, config_path: str):
+def init_by_config_path(
+    input_path: str,
+    output_path: str,
+    config_path: str,
+    mode: str,
+):
+    assert mode == 'compress' or mode == 'decompress', \
+        f'Invalid mode {mode}. Choose either \'compress\' or \'decompress\'.'
     config = get_global_config(config_path)
     set_seed(config.seed)
 
@@ -43,7 +51,7 @@ def init_by_config_path(input_path: str, config_path: str):
     data_loader_cls = getattr(data_loader, config.dataloader)
     dataloader = data_loader_cls(
         input_path, tokenizer, config.model.block_size
-    )
+    ) if mode == 'compress' else None
 
     model_args = ModelArgs.from_dict(config.model)
     model_args.max_batch_size = config.model.max_batch_size
@@ -53,7 +61,18 @@ def init_by_config_path(input_path: str, config_path: str):
     trainer_args = TrainArgs.from_dict(config.trainer)
     trainer = Trainer(trainer_args, model)
 
-    return config, tokenizer, dataloader, trainer
+    io_mode = ''
+    io_cls = getattr(file_io, config.ac.io)
+    if mode == 'compress':
+        io_mode += 'a'
+        if 'Binary' in config.ac.io: io_mode += 'b'
+        io = io_cls(output_path, io_mode)
+    else:
+        io_mode += 'r'
+        if 'Binary' in config.ac.io: io_mode += 'b'
+        io = io_cls(input_path, io_mode)
+
+    return config, tokenizer, dataloader, trainer, io
 
 
 def creat_vocab_file_with_spacy(input_file: str, output_file: str):

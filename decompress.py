@@ -5,8 +5,8 @@ from utils import init_by_config_path
 
 
 def decompress(args):
-    config, tokenizer, _, trainer = init_by_config_path(
-        args.input_file, args.config_file
+    config, tokenizer, _, trainer, io = init_by_config_path(
+        args.input_file, args.output_file, args.config_file, 'decompress'
     )
     max_len = config.model.block_size
     print('Start decompressing with the following config...')
@@ -21,9 +21,7 @@ def decompress(args):
     low = 0
     high = whole
 
-    with open(args.input_file, 'r') as f:
-        bits = f.read().strip()
-    bits = [int(bit) for bit in bits]
+    bits = [bit for bit in io]
     len_bits = len(bits)
 
     z = 0
