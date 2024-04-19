@@ -1,7 +1,6 @@
 import os
 
-from file_io import BinaryCompressFileReader, BinaryCompressFileWriter
-from file_io import TextCompressFileReader, TextCompressFileWriter
+from file_io import BinaryCompressFileIO, TextCompressFileIO
 
 
 def test_binary_file_io1():
@@ -9,11 +8,11 @@ def test_binary_file_io1():
 
     test_input_1 = [0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]
 
-    writer = BinaryCompressFileWriter(tmp_file)
+    writer = BinaryCompressFileIO(tmp_file, 'ab')
     writer.write(test_input_1)
     writer.close()
 
-    reader = BinaryCompressFileReader(tmp_file)
+    reader = BinaryCompressFileIO(tmp_file, 'rb')
     test_output_1 = [bit for bit in reader]
     reader.close()
 
@@ -27,11 +26,11 @@ def test_binary_file_io2():
 
     test_input_2 = [1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]
 
-    writer = BinaryCompressFileWriter(tmp_file)
+    writer = BinaryCompressFileIO(tmp_file, 'ab')
     writer.write(test_input_2)
     writer.close()
 
-    reader = BinaryCompressFileReader(tmp_file)
+    reader = BinaryCompressFileIO(tmp_file, 'rb')
     test_output_2 = [bit for bit in reader]
     reader.close()
 
@@ -45,11 +44,11 @@ def test_text_file_io1():
 
     test_input_1 = [0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]
 
-    writer = TextCompressFileWriter(tmp_file)
+    writer = TextCompressFileIO(tmp_file, 'a')
     writer.write(test_input_1)
     writer.close()
 
-    reader = TextCompressFileReader(tmp_file)
+    reader = TextCompressFileIO(tmp_file, 'r')
     test_output_1 = [bit for bit in reader]
     reader.close()
 
@@ -63,11 +62,11 @@ def test_text_file_io2():
 
     test_input_2 = [1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]
 
-    writer = TextCompressFileWriter(tmp_file)
+    writer = TextCompressFileIO(tmp_file, 'a')
     writer.write(test_input_2)
     writer.close()
 
-    reader = TextCompressFileReader(tmp_file)
+    reader = TextCompressFileIO(tmp_file, 'r')
     test_output_2 = [bit for bit in reader]
     reader.close()
 
