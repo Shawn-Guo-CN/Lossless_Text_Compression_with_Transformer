@@ -10,56 +10,16 @@ transformers/models/gpt2/modeling_gpt2.py
 3) the official Mistral implementation by MistralAI:
 https://github.com/mistralai/mistral-src/
 """
-from dataclasses import dataclass
 import math
 
-from typing import Optional, Union
+from typing import Optional
 import torch
 import torch.nn as nn
-from simple_parsing.helpers import Serializable
 from torch.nn import functional as F
 
-from modules import GPTBlock
+from modules import GPTBlock, MistralBlock, ModelArgs, RMSNorm
+from modules import precompute_freqs_cis
 
-
-@dataclass
-class ModelArgs(Serializable):
-    model_type: Union[str, None]
-    n_layer: int
-    n_head: int
-    n_embd: int
-    norm_eps: float
-    vocab_size: int
-    block_size: int
-    embd_pdrop: float
-    resid_pdrop: float
-    attn_pdrop: float
-
-
-
-
-
-@dataclass
-class ModelArgs(Serializable):
-    dim: int
-    n_layers: int
-    head_dim: int
-    hidden_dim: int
-    n_heads: int
-    n_kv_heads: int
-    norm_eps: float
-    vocab_size: int
-
-    max_batch_size: int = 0
-
-    # For rotary embeddings. If not set, will be infered from sliding window.
-    rope_theta: Optional[float] = None
-    # If this is set, use sliding window attention rotating cache.
-    sliding_window: Optional[int] = None
-    # If this is set, we will use MoE layers instead of dense layers.
-    moe: Optional[MoeArgs] = None
-
-# -----------------------------------------------------------------------------
 
 class GPT(nn.Module):
     """ GPT Language Model """
@@ -67,66 +27,71 @@ class GPT(nn.Module):
     @staticmethod
     def get_default_config():
         C = ModelArgs()
-        # either model_type or
-        # (n_layer, n_head, n_embd) must be given in the config
+        # Config must give either model_type or
+        # (embd_dim, n_layer, n_head)
         C.model_type = 'gpt'
+        C.cxt_size = None
+        C.embd_sim = None
         C.n_layer = None
         C.n_head = None
-        C.n_embd =  None
-        # these options must be filled in externally
+        C.n_kv_head = None
+        C.head_dim = None
+        C.hidden_dim = None
+        C.norm_eps = None
         C.vocab_size = None
-        C.block_size = None
-        # dropout hyperparameters
-        C.embd_pdrop = 0.1
-        C.resid_pdrop = 0.1
-        C.attn_pdrop = 0.1
+        C.p_drop = 0.1
+        C.max_batch_size = None
+        C.rope_theta = None
+        C.moe = None
         return C
 
     def __init__(self, config):
         super().__init__()
         assert config.vocab_size is not None
-        assert config.block_size is not None
-        self.block_size = config.block_size
+        assert config.cxt_size is not None
+        self.cxt_size = config.cxt_size
 
         type_given = config.model_type is not None
         params_given = all([
+            config.embd_dim is not None,
             config.n_layer is not None,
-            config.n_head is not None,
-            config.n_embd is not None
+            config.n_head is not None
         ])
         assert type_given ^ params_given # exactly one of these (XOR)
         if type_given:
             # translate from model_type to detailed configuration
             config.merge_from_dict({
-                # names follow the huggingface naming conventions GPT-1
+                # names follow the huggingface naming conventions
                 # GPT-2 configs
                 # 117M params
-                'openai-gpt':   dict(n_layer=12, n_head=12, n_embd=768),
+                'openai-gpt':   dict(n_layer=12, n_head=12, embd_dim=768),
                 # 124M params
-                'gpt2':         dict(n_layer=12, n_head=12, n_embd=768),
+                'gpt2':         dict(n_layer=12, n_head=12, embd_dim=768),
                 # 350M params
-                'gpt2-medium':  dict(n_layer=24, n_head=16, n_embd=1024),
+                'gpt2-medium':  dict(n_layer=24, n_head=16, embd_dim=1024),
                 # 774M params
-                'gpt2-large':   dict(n_layer=36, n_head=20, n_embd=1280),
+                'gpt2-large':   dict(n_layer=36, n_head=20, embd_dim=1280),
                 # 1558M params
-                'gpt2-xl':      dict(n_layer=48, n_head=25, n_embd=1600),
+                'gpt2-xl':      dict(n_layer=48, n_head=25, embd_dim=1600),
                 # Gophers
-                'gopher-44m':   dict(n_layer=8, n_head=16, n_embd=512),
+                'gopher-44m':   dict(n_layer=8, n_head=16, embd_dim=512),
                 # (there are a number more...)
                 # I made these tiny models up
-                'gpt-mini':     dict(n_layer=6, n_head=6, n_embd=192),
-                'gpt-micro':    dict(n_layer=4, n_head=4, n_embd=128),
-                'gpt-nano':     dict(n_layer=3, n_head=3, n_embd=48),
+                'gpt-mini':     dict(n_layer=6, n_head=6, embd_dim=192),
+                'gpt-micro':    dict(n_layer=4, n_head=4, embd_dim=128),
+                'gpt-nano':     dict(n_layer=3, n_head=3, embd_dim=48),
             }[config.model_type])
 
         self.transformer = nn.ModuleDict(dict(
-            wte = nn.Embedding(config.vocab_size, config.n_embd),
-            wpe = nn.Embedding(config.block_size, config.n_embd),
+            wte = nn.Embedding(config.vocab_size, config.embd_dim),
+            wpe = nn.Embedding(config.cxt_size, config.embd_dim),
             drop = nn.Dropout(config.embd_pdrop),
-            h = nn.ModuleList([GPTBlock(config) for _ in range(config.n_layer)]),
-            ln_f = nn.LayerNorm(config.n_embd),
+            h = nn.ModuleList(
+                [GPTBlock(config) for _ in range(config.n_layer)]
+            ),
+            ln_f = nn.LayerNorm(config.embd_dim),
         ))
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.lm_head = nn.Linear(config.embd_dim, config.vocab_size, bias=False)
 
         # init all weights, and apply a special scaled init to the residual
         # projections, per GPT-2 paper
@@ -134,7 +99,7 @@ class GPT(nn.Module):
         for pn, p in self.named_parameters():
             if pn.endswith('c_proj.weight'):
                 torch.nn.init.normal_(
-                    p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer)
+                    p, mean = 0.0, std = 0.02 / math.sqrt(2 * config.n_layer)
                 )
 
         # report number of parameters
@@ -152,19 +117,19 @@ class GPT(nn.Module):
             torch.nn.init.zeros_(module.bias)
             torch.nn.init.ones_(module.weight)
 
-    def forward(self, idx, targets=None):
+    def forward(self, idx):
         device = idx.device
         b, t = idx.size()
-        assert t <= self.block_size, \
+        assert t <= self.cxt_size, \
             f'Cannot forward sequence of length {t},' + \
-                f'block size is only {self.block_size}'
+                f'block size is only {self.cxt_size}'
         # shape (1, t)
         pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) 
 
         # forward the GPT model itself
-        # token embeddings of shape (b, t, n_embd)
+        # token embeddings of shape (b, t, embd_dim)
         tok_emb = self.transformer.wte(idx)
-        # position embeddings of shape (1, t, n_embd)
+        # position embeddings of shape (1, t, embd_dim)
         pos_emb = self.transformer.wpe(pos)
         x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
@@ -181,17 +146,20 @@ class GPT(nn.Module):
         return loss
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, do_sample=False, top_k=None):
+    def generate(
+        self, idx, max_new_tokens, temperature=1.0, do_sample=False, top_k=None
+    ) -> torch.LongTensor:
         """
-        Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
-        the sequence max_new_tokens times, feeding the predictions back into the model each time.
-        Most likely you'll want to make sure to be in model.eval() mode of operation for this.
+        Take a conditioning sequence of indices idx (LongTensor of shape (b,t))
+        and complete the sequence max_new_tokens times, feeding the predictions
+        back into the model each time. Most likely you'll want to make sure to
+        be in model.eval() mode of operation for this.
         """
         for _ in range(max_new_tokens):
             # if the sequence context is growing too long we must crop it at
-            # block_size
-            idx_cond = idx if idx.size(1) <= self.block_size else \
-                              idx[:, -self.block_size:]
+            # cxt_size
+            idx_cond = idx if idx.size(1) <= self.cxt_size else \
+                              idx[:, -self.cxt_size:]
             # forward the model to get the logits for the index in the sequence
             logits, _ = self(idx_cond)
             # pluck the logits at the final step and scale by desired
@@ -216,4 +184,118 @@ class GPT(nn.Module):
 
 # -----------------------------------------------------------------------------
 
+class Mistral(nn.Module):
+    def __init__(self, config: ModelArgs) -> None:
+        super().__init__()
+        self.config = config
+        assert config.vocab_size is not None
+        assert config.cxt_size is not None
+        self.cxt_size = config.cxt_size
+        self.vocab_size = config.vocab_size
 
+        type_given = config.model_type is not None
+        params_given = all([
+            config.embd_dim is not None,
+            config.n_layer is not None,
+            config.n_head is not None,
+            config.n_kv_head is not None,
+            config.head_dim is not None,
+            config.hidden_dim is not None,
+        ])
+        assert type_given ^ params_given # exactly one of these (XOR)
+        if type_given:
+            # translate from model_type to detailed configuration
+            config.merge_from_dict(
+                {# names follow the huggingface naming conventions
+                 # Mistral configs
+                 # 7B params
+                    'mistral': dict(
+                         cxt_size=1024,
+                         n_layer=32,
+                         n_head=32,
+                         n_kv_head=8,
+                         embd_dim=768,
+                         head_dim=14336,
+                         hidden_dim=4096,
+                         vocab_size=32000,
+                         p_drop = 0.1,
+                         norm_eps=1e-5,
+                         rope_theta=1e4,
+                         moe=None,
+                    ),
+                     # 0.47m params
+                     'mistral-nano': dict(
+                         cxt_size=32,
+                         n_layer=4,
+                         n_head=8,
+                         n_kv_head=2,
+                         embd_dim=32,
+                         head_dim=128,
+                         hidden_dim=128,
+                         vocab_size=3000,
+                         p_drop = 0.1,
+                         norm_eps=1e-5,
+                         rope_theta=1e4,
+                         moe=None,
+                     ),
+                }[config.model_type]
+            )
+
+        self.n_layer = config.n_layer
+        self._precomputed_freqs_cis: Optional[torch.Tensor] = None
+        assert self.vocab_size > 0
+
+        self.transformer = nn.ModuleDict(dict(
+            wte = nn.Embedding(config.vocab_size, config.embd_dim),
+            drop = nn.Dropout(config.p_drop),
+            h = nn.ModuleList(
+                [MistralBlock(config) for _ in range(config.n_layer)]
+            ),
+            ln_f = RMSNorm(config.embd_dim, eps=config.norm_eps),
+        ))
+        self.lm_head = nn.Linear(config.embd_dim, config.vocab_size, bias=False)
+
+        # (note we don't count the parameters in lm_head)
+        self.n_params = sum(p.numel() for p in self.transformer.parameters())
+
+    @property
+    def dtype(self) -> torch.dtype:
+        return next(self.parameters()).dtype
+
+    @property
+    def device(self) -> torch.device:
+        return next(self.parameters()).device
+
+    @property
+    def freq_cis(self) -> torch.Tensor:
+        if self._precomputed_freqs_cis is None:
+            self._precomputed_freqs_cis = precompute_freqs_cis(
+                self.config.embd_dim,
+                self.config.cxt_size,
+                self.config.rope_theta
+            )
+        if self._precomputed_freqs_cis.device != self.device:
+            self._precomputed_freqs_cis = self._precomputed_freqs_cis.to(
+                self.device
+            )
+        return self._precomputed_freqs_cis
+
+    def forward(self, idx: torch.Tensor) -> torch.Tensor:
+        b, t = idx.size()
+
+        assert t <= self.cxt_size, \
+            f'Cannot forward sequence of length {t},' + \
+                f'block size is only {self.cxt_size}'
+        assert b == 1, \
+            f'Only batch size 1 is supported, got {b}'
+
+        _freq_cis = self._precomputed_freqs_cis[:t, :]
+
+        tok_emb = self.transformer.wte(idx)
+        x = self.transformer.drop(tok_emb)
+        for block in self.transformer.h:
+            x = block(x, _freq_cis)
+        x = self.transformer.ln_f(x)
+        logits = self.lm_head(x)
+
+        return logits
