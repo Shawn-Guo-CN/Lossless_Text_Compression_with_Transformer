@@ -12,20 +12,41 @@ https://github.com/mistralai/mistral-src/
 """
 from dataclasses import dataclass
 import math
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
-from simple_parsing.helpers import Serializable
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from model import ModelArgs
+from utils import Configs
 
 
 @dataclass
-class MoeArgs(Serializable):
-    num_experts: int
+class MoeArgs(Configs):
+    num_experts:         int
     num_experts_per_tok: int
+
+
+@dataclass
+class ModelArgs(Configs):
+    model_type: Union[str, None]
+    cxt_size:   int   # context window size
+    embd_dim:   int   # embedding dimension
+    n_layer:    int   # number of Transformer blocks/layers
+    n_head:     int   # number of attention qury heads
+    n_kv_head:  int   # number of attention key/value heads
+    head_dim:   int   # dimension of each attention head
+    hidden_dim: int   # hidden dimension of the feedforward layer
+    norm_eps:   float # epsilon for RMS layer normalization
+    vocab_size: int   # size of the vocabulary
+    p_drop:     float # dropout probability in the model
+
+    max_batch_size: int = 0
+
+    # For rotary embeddings. If not set, will be 1e4 as the default value.
+    rope_theta: Optional[float] = None
+    # If this is set, we will use MoE layers instead of dense layers.
+    moe: Optional[MoeArgs] = None
 
 
 # utility functions for Rotary Positional Embedding
@@ -71,8 +92,8 @@ class MultiHeadAttention(nn.Module):
         # the input sequence
         self.register_buffer(
             "bias",
-            torch.tril(torch.ones(config.block_size, config.block_size)
-                      ).view(1, 1, config.block_size, config.block_size)
+            torch.tril(torch.ones(config.cxt_size, config.cxt_size)
+                      ).view(1, 1, config.cxt_size, config.cxt_size)
         )
         self.n_head = config.n_head
         self.embd_dim = config.embd_dim
@@ -137,7 +158,7 @@ class GroupedQueryAttention(nn.Module):
             config.embd_dim, config.n_kv_head * config.head_dim, bias=False
         )
         self.o_proj = nn.Linear(
-            config.n_heads * config.head_dim, config.embd_dim, bias=False
+            config.n_head * config.head_dim, config.embd_dim, bias=False
         )
 
         self.p_drop = config.p_drop if config.p_drop is not None else 0.1
@@ -145,8 +166,8 @@ class GroupedQueryAttention(nn.Module):
         self.register_buffer(
             "attn_bias",
             torch.tril(
-                torch.ones(config.block_size, config.block_size)
-            ).view(1, 1, config.block_size, config.block_size)
+                torch.ones(config.cxt_size, config.cxt_size)
+            ).view(1, 1, config.cxt_size, config.cxt_size)
         )
 
     def forward(self, x: torch.Tensor, freq_cis: torch.Tensor) -> torch.Tensor:
@@ -242,7 +263,7 @@ class GPTBlock(nn.Module):
             dropout = nn.Dropout(config.p_drop),
         ))
         m = self.ffn
-        # MLP forward
+        # FFN forward
         self.mlpf = lambda x: m.dropout(m.c_proj(m.act(m.c_fc(x))))
 
     def forward(self, x):

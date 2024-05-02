@@ -16,14 +16,14 @@ from torch.utils.data.dataloader import DataLoader
 
 @dataclass
 class TrainArgs(Serializable):
-    device : str = 'auto'
-    num_workers : int = 1
-    max_iters : Optional[int] = None
-    batch_size : int = 1
-    learning_rate : float = 3e-4
-    betas : Tuple[float, float] = (0.9, 0.95)
-    weight_decay : float = 0.1
-    grad_norm_clip : float = 1.0
+    device         : str                 = 'auto'
+    num_workers    : int                 = 1
+    max_iters      : Optional[int]       = None
+    batch_size     : int                 = 1
+    learning_rate  : float               = 3e-4
+    betas          : Tuple[float, float] = (0.9, 0.95)
+    weight_decay   : float               = 0.1
+    grad_norm_clip : float               = 1.0
 
 
 class Trainer(object):
