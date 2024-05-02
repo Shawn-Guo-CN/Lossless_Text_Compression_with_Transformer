@@ -12,13 +12,37 @@ https://github.com/mistralai/mistral-src/
 """
 from dataclasses import dataclass
 import math
-from typing import List, Optional, Tuple, Union
+from simple_parsing.helpers import Serializable
+from typing import Dict, List, Optional, Tuple, Union
+import yaml
 
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from utils import Configs
+
+class Configs(Serializable):
+    """Helper class to load and save configurations of models."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def to_yaml(self, path: str):
+        with open(path, 'w') as f:
+            yaml.dump(self.to_dict(), f, default_flow_style=False)
+
+    def merge_from_dict(self, updates: Dict):
+        for key, value in updates.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                print(
+                    f'Warning: {key} is not a valid attribute of ' + \
+                    f'{self.__class__.__name__}'
+                )
+
+    @classmethod
+    def from_dict(cls, config: Dict):
+        return cls(**config)
 
 
 @dataclass

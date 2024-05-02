@@ -2,41 +2,14 @@ import argparse
 from munch import munchify
 import numpy as np
 import random
-from simple_parsing.helpers import Serializable
 import torch
 from tqdm import tqdm
-from typing import Dict
-import yaml
 
 import data_loader
 import file_io
 from model import GPT, ModelArgs
 from tokenizer import Tokenizer
 from trainer import TrainArgs, Trainer
-
-
-class Configs(Serializable):
-    """Helper class to load and save configurations of models."""
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def to_yaml(self, path: str):
-        with open(path, 'w') as f:
-            yaml.dump(self.to_dict(), f, default_flow_style=False)
-
-    def merge_from_dict(self, updates: Dict):
-        for key, value in updates.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-            else:
-                print(
-                    f'Warning: {key} is not a valid attribute of ' + \
-                    f'{self.__class__.__name__}'
-                )
-
-    @classmethod
-    def from_dict(cls, config: Dict):
-        return cls(**config)
 
 
 def set_seed(seed):
